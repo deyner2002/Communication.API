@@ -29,6 +29,7 @@ namespace APIEmisorKafka
             var kafkaConfig = new ProducerConfig();
             Configuration.GetSection("Kafka").Bind(kafkaConfig);
 
+            services.Configure<MongoDBSettings>(Configuration.GetSection("MongoDBSettings"));
             services.AddSingleton<IProducer<string, string>>(new ProducerBuilder<string, string>(kafkaConfig).Build());
         }
 

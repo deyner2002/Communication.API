@@ -1,6 +1,9 @@
 ﻿using APIEmisorKafka.Models;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 
 namespace APIEmisorKafka.Controllers
@@ -11,10 +14,12 @@ namespace APIEmisorKafka.Controllers
     {
 
         private readonly IProducer<string, string> _kafkaProducer;
+        private readonly MongoDBSettings _mongoDBSettings;
 
-        public NotificationController(IProducer<string, string> kafkaProducer)
+        public NotificationController(IProducer<string, string> kafkaProducer, IOptions<MongoDBSettings> mongoDBSettings)
         {
             _kafkaProducer = kafkaProducer;
+            _mongoDBSettings = mongoDBSettings.Value;
         }
 
         [HttpPost]
@@ -47,9 +52,14 @@ namespace APIEmisorKafka.Controllers
             }
             else
             {
-                // Insertar en Mongo
+                MongoClient client = new MongoClient(_mongoDBSettings.ConnectionString);
+
+                IMongoDatabase database = client.GetDatabase(_mongoDBSettings.DatabaseName);
+                IMongoCollection<BsonDocument> collection = database.GetCollection<BsonDocument>(_mongoDBSettings.CollectionName);
+
+                BsonDocument document = BsonDocument.Parse(JsonConvert.SerializeObject(notification));
+                collection.InsertOne(document);
             }
-            
             return Ok("The notification was saved");
         }
     }
