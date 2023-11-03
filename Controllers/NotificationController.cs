@@ -41,11 +41,11 @@ namespace APIEmisorKafka.Controllers
         [Route("SaveNotification")]
         public IActionResult SaveNotification([FromBody] Notification notification)
         {
-            if (!notification.IsRecurring)
+            if (!notification.IsProgrammed)
             {
                 var message = new Message<string, string>
                 {
-                    Key = notification.Id,
+                    Key = null,
                     Value = JsonConvert.SerializeObject(notification)
                 };
                 _kafkaProducer.ProduceAsync("test-kafka", message);
