@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Confluent.Kafka;
 using Microsoft.OpenApi.Models;
+using APICommunication.DTOs;
 
 namespace APIEmisorKafka
 {
@@ -28,7 +29,7 @@ namespace APIEmisorKafka
 
             var kafkaConfig = new ProducerConfig();
             Configuration.GetSection("Kafka").Bind(kafkaConfig);
-
+            services.Configure<ConnectionStrings>(Configuration.GetSection("ConnectionStrings"));
             services.Configure<MongoDBSettings>(Configuration.GetSection("MongoDBSettings"));
             services.AddSingleton<IProducer<string, string>>(new ProducerBuilder<string, string>(kafkaConfig).Build());
         }
