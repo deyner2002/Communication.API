@@ -75,7 +75,7 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("SaveTemplate")]
-        public IActionResult SaveTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel,string Subject)
+        public IActionResult SaveTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel,string Subject, string attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)
@@ -102,9 +102,9 @@ namespace APIEmisorKafka.Controllers
 
                     Body = Body.Replace("'", "*-*");
 
-                    string query = string.Format("INSERT INTO [dbo].[Template] (Id, Name, Body, Sender, Channel, Subject, CreationDate, ModificationDate, CreationUser, Status) " +
-                        "VALUES ({0}, '{1}', '{2}', '{3}', {4}, '{5}', GETDATE(), GETDATE(), 'APICOMM', 'A' )",
-                        Id, Name, Body, Sender, Channel, Subject);
+                    string query = string.Format("INSERT INTO [dbo].[Template] (Id, Name, Body, Sender, Channel, Subject, CreationDate, ModificationDate, CreationUser, Status, Attachments) " +
+                        "VALUES ({0}, '{1}', '{2}', '{3}', {4}, '{5}', GETDATE(), GETDATE(), 'APICOMM', 'A', '{6}')",
+                        Id, Name, Body, Sender, Channel, Subject, attachments);
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -123,7 +123,7 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("UpdateTemplate")]
-        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel, string Subject)
+        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel, string Subject, string attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)
@@ -150,7 +150,7 @@ namespace APIEmisorKafka.Controllers
 
                     Body = Body.Replace("'", "*-*");
 
-                    string query = string.Format("UPDATE Template SET BODY = '{1}' WHERE Id = {0}", Id,Body);
+                    string query = string.Format("UPDATE Template SET BODY = '{1}', Attachments = '{2}' WHERE Id = {0}", Id,Body,attachments);
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -193,6 +193,7 @@ namespace APIEmisorKafka.Controllers
                                 Body = reader["Body"] is DBNull ? null : (string)reader["Body"],
                                 Subject = reader["Subject"] is DBNull ? null : (string)reader["Subject"],
                                 IsHtml = reader["IsHTML"] is DBNull ? false : (int)reader["IsHTML"] == 1 ? true : false,
+                                Attachments = reader["Attachments"] is DBNull ? null : (string)reader["Attachments"],
                             };
 
                             template.Body = template.Body.Replace("*-*", "'");

@@ -1,5 +1,4 @@
-﻿using APICommunication.Models;
-using APIEmisorKafka.Enum;
+﻿using APIEmisorKafka.Enum;
 
 namespace APIEmisorKafka.Models
 {
@@ -12,6 +11,6 @@ namespace APIEmisorKafka.Models
         public string? Body { get; set; }
         public bool? IsHtml { get; set; }
         public string? Subject { get; set; }
-        public string AttachmentUrl { get; set; }
+        public string Attachments { get; set; }
     }
 }
