@@ -122,6 +122,52 @@ namespace APIEmisorKafka.Controllers
         }
 
         [HttpPost]
+        [Route("UpdateTemplate")]
+        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel, string Subject)
+        {
+            string Body = string.Empty;
+            if (archivo == null || archivo.Length == 0)
+            {
+                return BadRequest("El archivo no es válido.");
+            }
+
+            try
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    archivo.CopyToAsync(memoryStream);
+                    memoryStream.Position = 0;
+
+                    using (var streamReader = new StreamReader(memoryStream, Encoding.UTF8))
+                    {
+                        Body = streamReader.ReadToEndAsync().Result;
+                    }
+                }
+
+                using (SqlConnection connection = new SqlConnection(_ConnectionStrings.WebConnection))
+                {
+                    connection.Open();
+
+                    Body = Body.Replace("'", "*-*");
+
+                    string query = string.Format("UPDATE Template SET BODY = '{1}' WHERE Id = {0}", Id,Body);
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.ExecuteNonQuery();
+                        Console.WriteLine("Registro actualizado correctamente.");
+                    }
+                }
+
+                return Ok("The notification was saved");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al procesar el archivo: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
         [Route("GetTemplate")]
         public Template GetTemplate(int Id)
         {
@@ -140,12 +186,13 @@ namespace APIEmisorKafka.Controllers
                         {
                             Template template = new Template
                             {
-                                Id = (int)reader["Id"],
+                                NumberId = (int)reader["Id"],
                                 Name = reader["Name"] is DBNull ? null : (string)reader["Name"],
                                 Channel = reader["Channel"] is DBNull ? null : (Channel)reader["Channel"],
                                 Sender = reader["Sender"] is DBNull ? null : (string)reader["Sender"],
                                 Body = reader["Body"] is DBNull ? null : (string)reader["Body"],
-                                Subject = reader["Subject"] is DBNull ? null : (string)reader["Subject"]
+                                Subject = reader["Subject"] is DBNull ? null : (string)reader["Subject"],
+                                IsHtml = reader["IsHTML"] is DBNull ? false : (int)reader["IsHTML"] == 1 ? true : false,
                             };
 
                             template.Body = template.Body.Replace("*-*", "'");
