@@ -11,6 +11,6 @@ namespace APIEmisorKafka.Models
         public string? Body { get; set; }
         public bool? IsHtml { get; set; }
         public string? Subject { get; set; }
-        public string Attachments { get; set; }
+        public string? Attachments { get; set; }
     }
 }

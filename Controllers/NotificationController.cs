@@ -75,7 +75,7 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("SaveTemplate")]
-        public IActionResult SaveTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel,string Subject, string attachments)
+        public IActionResult SaveTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel,string Subject, string? attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)
@@ -123,7 +123,7 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("UpdateTemplate")]
-        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel, string Subject, string attachments)
+        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel, string Subject, string? attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)

@@ -9,6 +9,8 @@ namespace APIEmisorKafka.Models
         public List<Channel> Channels { get; set; }
         public List<Contact> Contacts { get; set; }
         public List<Template> Templates { get; set; }
+        public bool GetObject { get; set; }
+        public string GetObjectUrl { get; set; }
         public string Object { get; set; }
     }
 }
