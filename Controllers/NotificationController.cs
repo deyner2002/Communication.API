@@ -75,14 +75,13 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("SaveTemplate")]
-        public IActionResult SaveTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel,string Subject, string? attachments)
+        public IActionResult SaveTemplate(IFormFile archivo, string Name, string Sender, int Channel,string Subject, string? attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)
             {
                 return BadRequest("El archivo no es válido.");
             }
-
             try
             {
                 using (var memoryStream = new MemoryStream())
@@ -103,8 +102,8 @@ namespace APIEmisorKafka.Controllers
                     Body = Body.Replace("'", "*-*");
 
                     string query = string.Format("INSERT INTO [dbo].[Template] (Id, Name, Body, Sender, Channel, Subject, CreationDate, ModificationDate, CreationUser, Status, Attachments) " +
-                        "VALUES ({0}, '{1}', '{2}', '{3}', {4}, '{5}', GETDATE(), GETDATE(), 'APICOMM', 'A', '{6}')",
-                        Id, Name, Body, Sender, Channel, Subject, attachments);
+                        "VALUES (NEXT VALUE FOR SequenceTemplate, '{0}', '{1}', '{2}', {3}, '{4}', GETDATE(), GETDATE(), 'APICOMM', 'A', '{5}')",
+                        Name, Body, Sender, Channel, Subject, attachments);
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
