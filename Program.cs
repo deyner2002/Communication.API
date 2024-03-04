@@ -1,16 +1,51 @@
+using APICommunication.DTOs;
 using APIEmisorKafka;
+using Confluent.Kafka;
+using Microsoft.Extensions.Configuration;
 
-public class Program
+var builder = WebApplication.CreateBuilder(args);
+
+
+
+// Add services to the container.
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+
+
+var kafkaConfig = new ProducerConfig();
+builder.Configuration.GetSection("Kafka").Bind(kafkaConfig);
+builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
+builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDBSettings"));
+builder.Services.AddSingleton<IProducer<string, string>>(new ProducerBuilder<string, string>(kafkaConfig).Build());
+
+builder.Services.AddSwaggerGen();
+var _MyCors = "MyCors";
+var HostFront = builder.Configuration.GetValue<string>("HostFront");
+
+builder.Services.AddCors(options =>
 {
-    public static void Main(string[] args)
+    options.AddPolicy(name: _MyCors, builder =>
     {
-        CreateHostBuilder(args).Build().Run();
-    }
+        builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    });
+});
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<Startup>();
-            });
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+
+app.UseCors(_MyCors);
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

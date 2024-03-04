@@ -17,7 +17,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace APIEmisorKafka.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class NotificationController : ControllerBase
     {
 
@@ -75,7 +75,7 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("SaveTemplate")]
-        public IActionResult SaveTemplate(IFormFile archivo, string Name, string Sender, int Channel,string Subject, string? attachments)
+        public IActionResult SaveTemplate(IFormFile archivo, string Name, string Sender, int Channel, string Subject, string? attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)
