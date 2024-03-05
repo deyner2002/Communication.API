@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Core.Configuration;
 using Newtonsoft.Json;
 using System.Data.SqlClient;
-using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -122,7 +120,7 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("UpdateTemplate")]
-        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Name, string Sender, int Channel, string Subject, string? attachments)
+        public IActionResult UpdateTemplate(IFormFile archivo, int Id, string Sender, string Subject, string? attachments)
         {
             string Body = string.Empty;
             if (archivo == null || archivo.Length == 0)
@@ -149,7 +147,7 @@ namespace APIEmisorKafka.Controllers
 
                     Body = Body.Replace("'", "*-*");
 
-                    string query = string.Format("UPDATE Template SET BODY = '{1}', Attachments = '{2}' WHERE Id = {0}", Id,Body,attachments);
+                    string query = string.Format("UPDATE Template SET BODY = '{1}', Attachments = '{2}', Sender = '{3}', Subject = '{4}' WHERE Id = {0}", Id,Body,attachments,Sender, Subject);
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -159,6 +157,32 @@ namespace APIEmisorKafka.Controllers
                 }
 
                 return Ok("The notification was saved");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al procesar el archivo: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        [Route("DeleteTemplate")]
+        public IActionResult DeleteTemplate(int Id)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(_ConnectionStrings.WebConnection))
+                {
+                    connection.Open();
+
+                    string query = string.Format("UPDATE Template SET Status = 'I' WHERE Id = {0}", Id);
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.ExecuteNonQuery();
+                        Console.WriteLine("Registro eliminado correctamente.");
+                    }
+                }
+                return Ok("The notification was removed");
             }
             catch (Exception ex)
             {
@@ -206,5 +230,37 @@ namespace APIEmisorKafka.Controllers
                 }
             }
         }
+
+        [HttpPost]
+        [Route("GetTemplates")]
+        public List<Template> GetTemplates()
+        {
+            List<Template> templates = new List<Template>();
+            using (SqlConnection connection = new SqlConnection(_ConnectionStrings.WebConnection))
+            {
+                connection.Open();
+
+                string query = "SELECT * FROM Template WHERE Status = 'A'";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Template template = new Template
+                            {
+                                NumberId = (int)reader["Id"],
+                                Name = reader["Name"] is DBNull ? null : (string)reader["Name"],
+                                Channel = reader["Channel"] is DBNull ? null : (Channel)reader["Channel"],
+                                Sender = reader["Sender"] is DBNull ? null : (string)reader["Sender"],
+                                Subject = reader["Subject"] is DBNull ? null : (string)reader["Subject"],
+                                IsHtml = reader["IsHTML"] is DBNull ? false : (int)reader["IsHTML"] == 1 ? true : false,
+                            };
+                            templates.Add(template);
+                        }
+                    }
+            }
+            return templates;
+        }
+
     }
 }
