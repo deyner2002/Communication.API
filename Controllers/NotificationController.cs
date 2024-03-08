@@ -1,6 +1,7 @@
 ﻿using APICommunication.DTOs;
 using APIEmisorKafka.Enum;
 using APIEmisorKafka.Models;
+using AutoMapper;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -9,8 +10,11 @@ using MongoDB.Driver;
 using Newtonsoft.Json;
 using System.Data.SqlClient;
 using System.Text;
+using System.IO;
+using OfficeOpenXml;
 using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Diagnostics.Contracts;
 
 namespace APIEmisorKafka.Controllers
 {
@@ -22,12 +26,14 @@ namespace APIEmisorKafka.Controllers
         private readonly IProducer<string, string> _kafkaProducer;
         private readonly MongoDBSettings _mongoDBSettings;
         public readonly ConnectionStrings _ConnectionStrings;
+        private readonly IMapper _mapper;
 
-        public NotificationController(IProducer<string, string> kafkaProducer, IOptions<MongoDBSettings> mongoDBSettings, IOptions<ConnectionStrings> ConnectionStrings)
+        public NotificationController(IProducer<string, string> kafkaProducer, IOptions<MongoDBSettings> mongoDBSettings, IOptions<ConnectionStrings> ConnectionStrings, IMapper mapper)
         {
             _kafkaProducer = kafkaProducer;
             _mongoDBSettings = mongoDBSettings.Value;
             _ConnectionStrings = ConnectionStrings.Value;
+            _mapper = mapper;
         }
 
         [HttpPost]
@@ -47,8 +53,18 @@ namespace APIEmisorKafka.Controllers
 
         [HttpPost]
         [Route("SaveNotification")]
-        public IActionResult SaveNotification([FromBody] Notification notification)
+        public IActionResult SaveNotification([FromBody] NotificationRequest notificationRequest)
         {
+            if (notificationRequest.ContactInfo.Type == APICommunication.Enum.TypeContactInfo.Excel)
+                notificationRequest.ContactInfo.Contacts = GetContactsByExcel(notificationRequest.ContactInfo.ContactExcelBase64);
+
+            var notification = _mapper.Map<NotificationRequest, Notification>(notificationRequest);
+
+            foreach (var idTemplate in notificationRequest.TemplatesIds)
+            {
+                notification.Templates.Add(GetTemplate(int.Parse(idTemplate.ToString())));
+            }
+
             if (!notification.IsProgrammed)
             {
                 var message = new Message<string, string>
@@ -69,6 +85,33 @@ namespace APIEmisorKafka.Controllers
                 collection.InsertOne(document);
             }
             return Ok("The notification was saved");
+        }
+
+        private List<Contact> GetContactsByExcel(string base64)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            List<Contact> contacts = new List<Contact>();
+
+            byte[] bytes = Convert.FromBase64String(base64);
+
+            using (var memoryStream = new MemoryStream(bytes))
+            {
+                using (var excelPackage = new ExcelPackage(memoryStream))
+                {
+                    ExcelWorksheet worksheet = excelPackage.Workbook.Worksheets[0];
+
+                    int rowCount = worksheet.Dimension.Rows;
+
+                    for (int row = 2; row <= rowCount; row++)
+                    {
+                        string email = worksheet.Cells[row, 1].Value?.ToString();
+                        string phone = worksheet.Cells[row, 2].Value?.ToString();
+
+                        contacts.Add(new Contact { Mail = email, Phone = phone });
+                    }
+                }
+            }
+            return contacts;
         }
 
         [HttpPost]
