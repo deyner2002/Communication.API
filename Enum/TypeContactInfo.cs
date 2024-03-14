@@ -3,6 +3,6 @@
     public enum TypeContactInfo
     {
         Excel,
-        ListTo
+        Specific
     }
 }
