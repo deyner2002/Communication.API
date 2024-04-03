@@ -1,30 +1,39 @@
 using APICommunication.DTOs;
-using APIEmisorKafka;
 using Confluent.Kafka;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
-
-
-
-// Add services to the container.
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
+IConfiguration config = new ConfigurationBuilder()
+.AddAzureAppConfiguration(options =>
+{
+    options.Connect(builder.Configuration.GetValue<string>("AppConfigsAzure"))
+           .ConfigureKeyVault(kv =>
+           {
+               kv.SetCredential(new DefaultAzureCredential());
+           });
+})
+.Build();
+
+builder.Services.Configure<ConnectionStrings>(config.GetSection("communication:sqlconnection"));
+
+builder.Services.Configure<MongoDBSettings>(config.GetSection("mongo:configuration"));
 
 var kafkaConfig = new ProducerConfig();
-builder.Configuration.GetSection("Kafka").Bind(kafkaConfig);
-builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
-builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDBSettings"));
+config.GetSection("kafka:configuration").Bind(kafkaConfig);
+
 builder.Services.AddSingleton<IProducer<string, string>>(new ProducerBuilder<string, string>(kafkaConfig).Build());
+
 builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddSwaggerGen();
+
 var _MyCors = "MyCors";
-var HostFront = builder.Configuration.GetValue<string>("HostFront");
+var HostFront = config.GetValue<string>("HostFront");
 
 builder.Services.AddCors(options =>
 {
